@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wiki App</title>
+  <style>
+    :root {
+      --bg-dark: #1e1e1e;
+      --card-bg: #333333;
+      --card-hover: #3d3d3d;
+      --box-inner-bg: #424242;
+      --text-main: #ffffff;
+      --text-muted: #aaaaaa;
+      --border-color: #333333;
+      --accent-blue: #00a3e0;
+      --accent-green: #689f78;
+      --tag-bg: #444444;
+      --tag-hover: #555555;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .app-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr 280px;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* サイドバー */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .site-brand {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: var(--accent-blue);
+      letter-spacing: -1px;
+      cursor: pointer;
+    }
+
+    .site-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: -0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .site-description {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 0.8rem;
+      margin-top: 0.5rem;
+    }
+
+    .social-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+
+    .social-icon:hover {
+      color: var(--text-main);
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      padding: 0.6rem 0;
+      cursor: pointer;
+      text-align: left;
+      transition: color 0.2s;
+    }
+
+    .nav-btn:hover, .nav-btn.active {
+      color: var(--text-main);
+    }
+
+    .nav-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* メインコンテンツ */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .article-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+
+    .article-card:hover {
+      background-color: var(--card-hover);
+    }
+
+    /* サムネイル画像の表示スタイル */
+    .article-card-media {
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .article-card-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .article-body {
+      padding: 1.5rem;
+    }
+
+    .article-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .green-tag {
+      background-color: var(--accent-green);
+      color: white;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .article-title {
+      font-size: 1.35rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .article-snippet {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .article-meta {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* 記事詳細のメディアレンダリング用スタイル */
+    .rendered-content {
+      line-height: 1.8;
+      font-size: 0.95rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 1.2rem;
+    }
+
+    .rendered-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 1rem 0;
+      display: block;
+    }
+
+    .rendered-content video, 
+    .rendered-content audio,
+    .rendered-content iframe {
+      max-width: 100%;
+      margin: 1rem 0;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .rendered-content iframe {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: none;
+    }
+
+    .rendered-content ul {
+      margin: 1rem 0 1rem 1.5rem;
+      list-style-type: disc;
+    }
+
+    .rendered-content li {
+      margin-bottom: 0.3rem;
+    }
+
+    /* コメント表示 */
+    .comments-section {
+      margin-top: 2rem;
+      border-top: 1px solid var(--box-inner-bg);
+      padding-top: 1.5rem;
+    }
+
+    .comment-item {
+      background-color: var(--box-inner-bg);
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.8rem;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .comment-name {
+      font-weight: bold;
+      color: var(--accent-blue);
+    }
+
+    .comment-text {
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+    }
+
+    /* 右カラム */
+    .right-widgets {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .auth-box {
+      background-color: var(--card-bg);
+      padding: 1rem;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .user-info {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+
+    .admin-badge {
+      display: inline-block;
+      background-color: #d69e2e;
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      margin-left: 0.4rem;
+    }
+
+    .search-widget {
+      position: relative;
+    }
+
+    .search-widget input {
+      width: 100%;
+      background-color: var(--card-bg);
+      border: 1px solid transparent;
+      padding: 0.8rem 2.8rem 0.8rem 1rem;
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .search-widget input:focus {
+      border-color: #555555;
+    }
+
+    .search-widget svg {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--text-muted);
+    }
+
+    .widget-header {
+      margin-bottom: 0.8rem;
+    }
+
+    .widget-title {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+
+    .archive-box {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .archive-count {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .category-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .category-tag {
+      background-color: var(--tag-bg);
+      color: var(--text-main);
+      font-size: 0.82rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .category-tag:hover {
+      background-color: var(--tag-hover);
+    }
+
+    .btn {
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn-toolbar {
+      background-color: var(--tag-bg);
+      color: var(--text-main);
+      border: none;
+      padding: 0.35rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .btn-toolbar:hover {
+      background-color: var(--tag-hover);
+    }
+
+    .toolbar-group {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.6rem;
+      background-color: var(--box-inner-bg);
+      border: 1px solid #555;
+      color: var(--text-main);
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    textarea.form-control {
+      min-height: 180px;
+      resize: vertical;
+    }
+
+    .view-page {
+      display: none;
+    }
+    .view-page.active {
+      display: block;
+    }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 960px) {
+      .app-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="app-layout">
+      
+      <!-- サイドバー -->
+      <aside class="sidebar">
+        <div>
+          <div class="site-brand" id="logo-home">kuwakuwaのBlog</div>
+          <div class="site-title">kuwakuwaのBlog</div>
+          <p class="site-description">
+            ここは、kuwakuwa53577が<br>不定期に更新する、
+            便利なことや<br>面白いこと、知ってほしいことなどを<br>まとめたブログです。
+          </p>
+
+          <div class="social-links">
+            <a href="https://github.com/kuwakuwa53577" target="_blank" rel="noopener" title="GitHub">
+              <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </a>
+            <a href="https://x.com" target="_blank" rel="noopener" title="X">
+              <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-btn active" id="nav-home" onclick="navigateTo('home')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            ホーム
+          </button>
+          <button class="nav-btn" id="nav-archive" onclick="navigateTo('search')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            記事一覧
+          </button>
+          <button class="nav-btn" id="nav-create" onclick="navigateTo('create')" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            ページ投稿 (管理者)
+          </button>
+        </nav>
+      </aside>
+
+      <!-- メインコンテンツ -->
+      <main class="main-content">
+        
+        <!-- ホーム画面 -->
+        <div id="page-home" class="view-page active">
+          <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">最新の記事</h2>
+          <div id="home-articles-list">
+            <div class="loading-spinner">記事を読み込んでいます...</div>
+          </div>
+        </div>
+
+        <!-- 検索・一覧画面 -->
+        <div id="page-search" class="view-page">
+          <div style="background-color:var(--card-bg); padding:1.5rem; border-radius:12px;">
+            <h2 style="margin-bottom: 1rem; font-size: 1.2rem;" id="search-page-title">すべての記事</h2>
+            <div id="search-results-list"></div>
+          </div>
+        </div>
+
+        <!-- 記事詳細画面 -->
+        <div id="page-detail" class="view-page">
+          <div style="background-color:var(--card-bg); padding:1.5rem; border-radius:12px;">
+            <h1 id="detail-title" style="font-size: 1.6rem; margin-bottom:0.8rem; line-height:1.3;"></h1>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;" id="detail-meta"></div>
+            <div id="detail-tags" class="article-tags" style="margin-bottom: 1.5rem;"></div>
+            
+            <!-- レンダリングされた本文領域 -->
+            <div id="detail-content" class="rendered-content"></div>
+            
+            <div style="margin-top: 1.5rem;" id="detail-actions">
+              <button id="btn-delete" class="btn" style="background-color: #e53e3e; display: none;">この記事を削除 (管理者限定)</button>
+            </div>
+
+            <!-- コメントエリア -->
+            <div class="comments-section">
+              <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">💬 コメント</h3>
+              <div id="comments-list" style="margin-bottom: 1.5rem;">
+                <p style="color:var(--text-muted); font-size:0.85rem;">コメントはまだありません。</p>
+              </div>
+
+              <!-- コメント投稿フォーム -->
+              <form id="comment-form" style="background-color: var(--box-inner-bg); padding: 1rem; border-radius: 8px;">
+                <h4 style="font-size: 0.9rem; margin-bottom: 0.8rem;">コメントを投稿する</h4>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                  <label>お名前</label>
+                  <input type="text" id="comment-name" class="form-control" placeholder="名無しさん" style="background-color: var(--card-bg);">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.8rem;">
+                  <label>コメント内容</label>
+                  <textarea id="comment-text" class="form-control" style="min-height: 80px; background-color: var(--card-bg);" required></textarea>
+                </div>
+                <button type="submit" class="btn" style="background-color: var(--accent-green);">送信</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- 記事作成画面 (管理者専用) -->
+        <div id="page-create" class="view-page">
+          <div style="background-color:var(--card-bg); padding:1.5rem; border-radius:12px;">
+            <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">新規Wikiページの投稿</h2>
+            <form id="create-form">
+              <div class="form-group">
+                <label>タイトル</label>
+                <input type="text" id="input-title" class="form-control" placeholder="例: おすすめの楽曲・動画まとめ" required>
+              </div>
+              <div class="form-group">
+                <label>タグ（カンマ区切り）</label>
+                <input type="text" id="input-tags" class="form-control" placeholder="例: 音楽, 動画, リスト">
+              </div>
+              <div class="form-group">
+                <label>本文</label>
+                <!-- ツールバー -->
+                <div class="toolbar-group">
+                  <button type="button" class="btn-toolbar" onclick="insertSnippet('image')">🖼 画像を追加</button>
+                  <button type="button" class="btn-toolbar" onclick="insertSnippet('video')">🎥 動画URLを追加</button>
+                  <button type="button" class="btn-toolbar" onclick="insertSnippet('audio')">🎵 音楽URLを追加</button>
+                  <button type="button" class="btn-toolbar" onclick="insertSnippet('list')">📝 リスト項目を追加</button>
+                </div>
+                <textarea id="input-content" class="form-control" placeholder="文章を入力するか、上のボタンからメディアを追加してください..." required></textarea>
+              </div>
+              <button type="submit" class="btn">投稿を保存</button>
+            </form>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- 右カラム -->
+      <aside class="right-widgets">
+        <div class="auth-box">
+          <div id="user-display" class="user-info">未ログイン (ゲスト)</div>
+          <button id="btn-login" class="btn">ログイン (Google)</button>
+          <button id="btn-logout" class="btn" style="display:none; background-color:#555;">ログアウト</button>
+        </div>
+        
+        <div class="search-widget">
+          <input type="text" id="search-input" placeholder="ページを検索...">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <div>
+          <div class="widget-header">
+            <div class="widget-title">総記事数</div>
+          </div>
+          <div class="archive-box" onclick="navigateTo('search')">
+            <span>全ページ</span>
+            <span class="archive-count" id="archive-count-num">0 件</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="widget-header">
+            <div class="widget-title">カテゴリタグ</div>
+          </div>
+          <div class="category-tags" id="tags-container">
+            <span style="color:var(--text-muted); font-size:0.8rem;">タグはありません</span>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const ADMIN_EMAIL = "mikancat09@gmail.com";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWJ8gxMBqlCH-HGccXb-PpwM7xWVghUNg",
+      authDomain: "my-ball-wiki.firebaseapp.com",
+      projectId: "my-ball-wiki",
+      storageBucket: "my-ball-wiki.firebasestorage.app",
+      messagingSenderId: "1004863748430",
+      appId: "1:1004863748430:web:584e16403e2eb87c90861f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let isAdmin = false;
+    let allArticles = [];
+    let currentDetailId = null;
+    let commentsUnsubscribe = null;
+
+    // 画面切り替え
+    window.navigateTo = function(pageId, extraData = null) {
+      if (pageId === 'create' && !isAdmin) {
+        alert('記事投稿権限がありません (管理者専用)');
+        return;
+      }
+
+      document.querySelectorAll('.view-page').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+      const target = document.getElementById(`page-${pageId}`);
+      if (target) target.classList.add('active');
+
+      const navBtn = document.getElementById(`nav-${pageId}`);
+      if (navBtn) navBtn.classList.add('active');
+
+      if (pageId === 'search') {
+        renderSearchResults(extraData ? extraData.filterTag : null);
+      }
+    };
+
+    document.getElementById('logo-home').addEventListener('click', () => navigateTo('home'));
+
+    // 認証処理
+    document.getElementById('btn-login').addEventListener('click', () => {
+      signInWithPopup(auth, provider).catch(err => alert("ログインエラー: " + err.message));
+    });
+    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+    onAuthStateChanged(auth, user => {
+      currentUser = user;
+      isAdmin = user && (user.email === ADMIN_EMAIL);
+
+      const userDisplay = document.getElementById('user-display');
+      const navCreate = document.getElementById('nav-create');
+      const btnDelete = document.getElementById('btn-delete');
+
+      if (user) {
+        userDisplay.innerHTML = `ログイン中: ${user.email} ${isAdmin ? '<span class="admin-badge">管理者</span>' : ''}`;
+        document.getElementById('btn-login').style.display = 'none';
+        document.getElementById('btn-logout').style.display = 'block';
+      } else {
+        userDisplay.textContent = '未ログイン (ゲスト)';
+        document.getElementById('btn-login').style.display = 'block';
+        document.getElementById('btn-logout').style.display = 'none';
+      }
+
+      navCreate.style.display = isAdmin ? 'flex' : 'none';
+      if (btnDelete) btnDelete.style.display = isAdmin ? 'inline-block' : 'none';
+
+      if (currentUser && currentUser.displayName && document.getElementById('comment-name')) {
+        document.getElementById('comment-name').value = currentUser.displayName;
+      }
+    });
+
+    // ツールバーボタンで定型入力プレースホルダーを差し込む
+    window.insertSnippet = function(type) {
+      const textarea = document.getElementById('input-content');
+      let snippet = "";
+      
+      switch(type) {
+        case 'image':
+          snippet = "\nhttps://example.com/image.jpg\n";
+          break;
+        case 'video':
+          snippet = "\nhttps://www.youtube.com/watch?v=XXXXXXX\n";
+          break;
+        case 'audio':
+          snippet = "\nhttps://example.com/music.mp3\n";
+          break;
+        case 'list':
+          snippet = "\n- リスト項目1\n- リスト項目2\n- リスト項目3\n";
+          break;
+      }
+      
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      textarea.value = textarea.value.substring(0, start) + snippet + textarea.value.substring(end);
+      textarea.focus();
+    };
+
+    // メディアやリストを判定してリッチHTML表示に変換するパーサー関数
+    function renderFormattedContent(text) {
+      if (!text) return '';
+
+      // 改行で分割
+      const lines = text.split('\n');
+      let html = '';
+      let inList = false;
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+
+        // リスト構文 (- または * で始まる行)
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          if (!inList) {
+            html += '<ul>';
+            inList = true;
+          }
+          const itemText = trimmed.replace(/^[-*]\s+/, '');
+          html += `<li>${escapeHtml(itemText)}</li>`;
+          return;
+        } else if (inList) {
+          html += '</ul>';
+          inList = false;
+        }
+
+        // 空行の場合
+        if (trimmed === '') {
+          html += '<br>';
+          return;
+        }
+
+        // YouTube 埋め込み判定
+        const ytMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
+        if (ytMatch) {
+          html += `<iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe>`;
+          return;
+        }
+
+        // 画像URL判定 (.jpg, .png, .gif, .webp, .svg)
+        if (trimmed.match(/^https?:\/\/.*\.(jpeg|jpg|png|gif|webp|svg)(\?.*)?$/i)) {
+          html += `<img src="${escapeHtml(trimmed)}" alt="画像" loading="lazy">`;
+          return;
+        }
+
+        // 動画URL判定 (.mp4, .webm, .ogg)
+        if (trimmed.match(/^https?:\/\/.*\.(mp4|webm|ogg)(\?.*)?$/i)) {
+          html += `<video controls src="${escapeHtml(trimmed)}"></video>`;
+          return;
+        }
+
+        // 音楽URL判定 (.mp3, .wav, .ogg, .m4a)
+        if (trimmed.match(/^https?:\/\/.*\.(mp3|wav|ogg|m4a)(\?.*)?$/i)) {
+          html += `<audio controls src="${escapeHtml(trimmed)}"></audio>`;
+          return;
+        }
+
+        // 通常テキスト行
+        html += `<p>${escapeHtml(line)}</p>`;
+      });
+
+      if (inList) {
+        html += '</ul>';
+      }
+
+      return html;
+    }
+
+    // 本文から最初の画像URLを1つ抽出する関数
+    function getFirstImageUrl(text) {
+      if (!text) return null;
+      const lines = text.split('\n');
+      for (let line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.match(/^https?:\/\/.*\.(jpeg|jpg|png|gif|webp|svg)(\?.*)?$/i)) {
+          return trimmed;
+        }
+      }
+      return null;
+    }
+
+    // HTMLエスケープヘルパー
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+    }
+
+    // Firestore 記事取得
+    const q = query(collection(db, "articles"), orderBy("createdAt", "desc"));
+    onSnapshot(q, snapshot => {
+      allArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      document.getElementById('archive-count-num').textContent = `${allArticles.length} 件`;
+      renderHomeList();
+      renderTagsList();
+    }, err => {
+      console.error("データ取得エラー:", err);
+    });
+
+    function renderHomeList() {
+      const container = document.getElementById('home-articles-list');
+      if (allArticles.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted)">投稿されたページがまだありません。</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      allArticles.forEach(article => {
+        container.appendChild(createArticleCard(article));
+      });
+    }
+
+    function renderTagsList() {
+      const tagsContainer = document.getElementById('tags-container');
+      const tagsSet = new Set();
+      allArticles.forEach(a => {
+        if (a.tags) a.tags.forEach(t => tagsSet.add(t));
+      });
+
+      if (tagsSet.size === 0) {
+        tagsContainer.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem;">タグはありません</span>';
+        return;
+      }
+
+      tagsContainer.innerHTML = '';
+      tagsSet.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'category-tag';
+        span.textContent = tag;
+        span.onclick = () => navigateTo('search', { filterTag: tag });
+        tagsContainer.appendChild(span);
+      });
+    }
+
+    function renderSearchResults(filterTag = null, keyword = '') {
+      const container = document.getElementById('search-results-list');
+      const title = document.getElementById('search-page-title');
+      container.innerHTML = '';
+
+      let results = allArticles;
+
+      if (filterTag) {
+        title.textContent = `カテゴリ: ${filterTag} の記事一覧`;
+        results = results.filter(a => a.tags && a.tags.includes(filterTag));
+      } else if (keyword) {
+        title.textContent = `"${keyword}" の検索結果`;
+        const kw = keyword.toLowerCase();
+        results = results.filter(a => 
+          (a.title && a.title.toLowerCase().includes(kw)) || 
+          (a.content && a.content.toLowerCase().includes(kw))
+        );
+      } else {
+        title.textContent = 'すべての記事';
+      }
+
+      if (results.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted)">該当するページが見つかりませんでした。</p>';
+        return;
+      }
+
+      results.forEach(article => {
+        container.appendChild(createArticleCard(article));
+      });
+    }
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      navigateTo('search');
+      renderSearchResults(null, val);
+    });
+
+    function createArticleCard(article) {
+      const div = document.createElement('div');
+      div.className = 'article-card';
+      div.style.marginBottom = '1.2rem';
+      
+      const tagsHtml = (article.tags || []).map(t => `<span class="green-tag">${t}</span>`).join(' ');
+      // プレビュー表示（タグ等は削除したテキストのみ表示）
+      const cleanSnippet = (article.content || '').replace(/(https?:\/\/[^\s]+)/g, '').substring(0, 100);
+      const dateStr = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleDateString('ja-JP') : '日付なし';
+
+      // 本文から画像URLを取得
+      const imageUrl = getFirstImageUrl(article.content);
+      const imageHtml = imageUrl ? `
+        <div class="article-card-media">
+          <img src="${escapeHtml(imageUrl)}" alt="サムネイル" loading="lazy">
+        </div>
+      ` : '';
+
+      div.innerHTML = `
+        ${imageHtml}
+        <div class="article-body">
+          <div class="article-tags">${tagsHtml}</div>
+          <h2 class="article-title">${article.title || '無題'}</h2>
+          <p class="article-snippet">${cleanSnippet || 'メディア付き記事'}</p>
+          <div class="article-meta">
+            <span>📅 ${dateStr}</span>
+            <span>👤 ${article.authorName || '管理者'}</span>
+          </div>
+        </div>
+      `;
+      div.onclick = () => openDetail(article.id);
+      return div;
+    }
+
+    function openDetail(id) {
+      const article = allArticles.find(a => a.id === id);
+      if (!article) return;
+
+      currentDetailId = id;
+      document.getElementById('detail-title').textContent = article.title;
+      
+      // 自動判定・変換されたリッチコンテンツを表示
+      document.getElementById('detail-content').innerHTML = renderFormattedContent(article.content);
+      
+      const dateStr = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleString('ja-JP') : '日付不明';
+      document.getElementById('detail-meta').textContent = `投稿者: ${article.authorName || '管理者'} | 投稿日: ${dateStr}`;
+      
+      const tagsContainer = document.getElementById('detail-tags');
+      tagsContainer.innerHTML = (article.tags || []).map(t => `<span class="green-tag">${t}</span>`).join(' ');
+
+      const btnDelete = document.getElementById('btn-delete');
+      btnDelete.style.display = isAdmin ? 'inline-block' : 'none';
+
+      listenComments(id);
+      navigateTo('detail');
+    }
+
+    // コメント取得
+    function listenComments(articleId) {
+      if (commentsUnsubscribe) commentsUnsubscribe();
+
+      const qComments = query(collection(db, "articles", articleId, "comments"), orderBy("createdAt", "asc"));
+      commentsUnsubscribe = onSnapshot(qComments, snapshot => {
+        const commentsList = document.getElementById('comments-list');
+        commentsList.innerHTML = '';
+
+        if (snapshot.empty) {
+          commentsList.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">コメントはまだありません。</p>';
+          return;
+        }
+
+        snapshot.forEach(docSnap => {
+          const comment = docSnap.data();
+          const dateStr = comment.createdAt ? new Date(comment.createdAt.toDate()).toLocaleString('ja-JP') : '投稿中...';
+          const div = document.createElement('div');
+          div.className = 'comment-item';
+          div.innerHTML = `
+            <div class="comment-header">
+              <span class="comment-name">${escapeHtml(comment.name || '名無しさん')}</span>
+              <span>${dateStr}</span>
+            </div>
+            <div class="comment-text">${escapeHtml(comment.text)}</div>
+          `;
+          commentsList.appendChild(div);
+        });
+      });
+    }
+
+    // コメント投稿送信
+    document.getElementById('comment-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentDetailId) return;
+
+      const nameInput = document.getElementById('comment-name').value.trim();
+      const textInput = document.getElementById('comment-text').value.trim();
+      if (!textInput) return;
+
+      try {
+        await addDoc(collection(db, "articles", currentDetailId, "comments"), {
+          name: nameInput || '名無しさん',
+          text: textInput,
+          createdAt: serverTimestamp()
+        });
+        document.getElementById('comment-text').value = '';
+      } catch (err) {
+        console.error(err);
+        alert('コメント投稿に失敗しました: ' + err.message);
+      }
+    });
+
+    // 記事保存処理
+    document.getElementById('create-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!isAdmin) {
+        alert('投稿権限がありません。');
+        return;
+      }
+
+      const title = document.getElementById('input-title').value.trim();
+      const content = document.getElementById('input-content').value.trim();
+      const tagsRaw = document.getElementById('input-tags').value;
+      const tags = tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+      try {
+        const newRef = doc(collection(db, "articles"));
+        await setDoc(newRef, {
+          title,
+          content,
+          tags,
+          authorId: currentUser.uid,
+          authorName: currentUser.displayName || currentUser.email,
+          createdAt: serverTimestamp()
+        });
+
+        document.getElementById('create-form').reset();
+        openDetail(newRef.id);
+      } catch (err) {
+        console.error(err);
+        alert('保存に失敗しました: ' + err.message);
+      }
+    });
+
+    // 記事削除
+    document.getElementById('btn-delete').addEventListener('click', async () => {
+      if (!isAdmin || !currentDetailId || !confirm('このページを削除してもよろしいですか？')) return;
+      try {
+        await deleteDoc(doc(db, "articles", currentDetailId));
+        navigateTo('home');
+      } catch (err) {
+        console.error(err);
+        alert('削除に失敗しました: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
