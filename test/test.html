@@ -46,7 +46,7 @@
         padding: 2rem 1.5rem;
       }
 
-      /* レイアウト調整: 3カラム（左240px, 中央1fr, 右280px）を確実に保持 */
+      /* レイアウト調整: 3カラム（左240px, 中央1fr, 右280px） */
       .app-layout {
         display: grid;
         grid-template-columns: 240px 1fr 280px;
@@ -55,11 +55,16 @@
         width: 100%;
       }
 
-      /* サイドバー */
+      /* 左サイドバー: 上レイヤー ＆ スクロール固定設定 */
       .sidebar {
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
+        position: sticky;
+        top: 2rem;
+        z-index: 10;
+        max-height: calc(100vh - 4rem);
+        overflow-y: auto;
       }
 
       .site-brand {
@@ -130,12 +135,14 @@
         height: 18px;
       }
 
-      /* メインコンテンツ */
+      /* メインコンテンツ（中央レイヤー） */
       .main-content {
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
         min-width: 0; /* 折り返し崩れ防止 */
+        position: relative;
+        z-index: 1;
       }
 
       .article-card {
@@ -244,7 +251,7 @@
         margin-bottom: 0.3rem;
       }
 
-      /* 新規追加：カスタムマークダウン要素用のスタイル */
+      /* カスタムマークダウン要素用のスタイル */
       .wiki-btn {
         display: inline-block;
         padding: 0.5rem 1rem;
@@ -358,12 +365,17 @@
         white-space: pre-wrap;
       }
 
-      /* 右カラム */
+      /* 右サイドバー: 上レイヤー ＆ スクロール固定設定 */
       .right-widgets {
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
         width: 100%;
+        position: sticky;
+        top: 2rem;
+        z-index: 10;
+        max-height: calc(100vh - 4rem);
+        overflow-y: auto;
       }
 
       .auth-box {
@@ -548,6 +560,10 @@
         .app-layout {
           grid-template-columns: 1fr;
         }
+        .sidebar, .right-widgets {
+          position: static;
+          max-height: none;
+        }
       }
     </style>
   </head>
@@ -628,7 +644,6 @@
             <div id="home-articles-list">
               <div class="loading-spinner">記事を読み込んでいます...</div>
             </div>
-            <!-- ホーム画面のページネーション -->
             <div id="home-pagination" class="pagination" style="display: none;">
               <button id="home-prev-btn" onclick="changeHomePage(-1)">前へ</button>
               <span id="home-page-info" class="page-info">1 / 1</span>
@@ -639,7 +654,6 @@
             <div style="background-color:var(--card-bg); padding:1.5rem; border-radius:12px;">
               <h2 style="margin-bottom: 1rem; font-size: 1.2rem;" id="search-page-title">すべての記事</h2>
               <div id="search-results-list"></div>
-              <!-- 検索・一覧画面のページネーション -->
               <div id="search-pagination" class="pagination" style="display: none;">
                 <button id="search-prev-btn" onclick="changeSearchPage(-1)">前へ</button>
                 <span id="search-page-info" class="page-info">1 / 1</span>
