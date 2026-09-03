@@ -292,6 +292,40 @@
         color: #e6e6e6;
       }
 
+      /* ページネーションスタイル */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .pagination button {
+        padding: 0.5rem 1rem;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background-color 0.2s;
+      }
+
+      .pagination button:hover:not(:disabled) {
+        background-color: var(--card-hover);
+      }
+
+      .pagination button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .pagination .page-info {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
       /* コメント表示 */
       .comments-section {
         margin-top: 2rem;
@@ -594,11 +628,23 @@
             <div id="home-articles-list">
               <div class="loading-spinner">記事を読み込んでいます...</div>
             </div>
+            <!-- ホーム画面のページネーション -->
+            <div id="home-pagination" class="pagination" style="display: none;">
+              <button id="home-prev-btn" onclick="changeHomePage(-1)">前へ</button>
+              <span id="home-page-info" class="page-info">1 / 1</span>
+              <button id="home-next-btn" onclick="changeHomePage(1)">次へ</button>
+            </div>
           </div>
           <div id="page-search" class="view-page">
             <div style="background-color:var(--card-bg); padding:1.5rem; border-radius:12px;">
               <h2 style="margin-bottom: 1rem; font-size: 1.2rem;" id="search-page-title">すべての記事</h2>
               <div id="search-results-list"></div>
+              <!-- 検索・一覧画面のページネーション -->
+              <div id="search-pagination" class="pagination" style="display: none;">
+                <button id="search-prev-btn" onclick="changeSearchPage(-1)">前へ</button>
+                <span id="search-page-info" class="page-info">1 / 1</span>
+                <button id="search-next-btn" onclick="changeSearchPage(1)">次へ</button>
+              </div>
             </div>
           </div>
           <div id="page-detail" class="view-page">
@@ -746,6 +792,13 @@
       let currentDetailId = null;
       let commentsUnsubscribe = null;
 
+      // ページネーション用状態管理
+      const ITEMS_PER_PAGE = 2; // 1ページあたり2つのメッセージ/記事を表示
+      let currentHomePage = 1;
+      let currentSearchPage = 1;
+      let currentSearchFilterTag = null;
+      let currentSearchKeyword = '';
+
       // 画面切り替え
       window.navigateTo = function(pageId, extraData = null) {
         if (pageId === 'create' && !isAdmin) {
@@ -762,8 +815,14 @@
         const navBtn = document.getElementById(`nav-${pageId}`);
         if (navBtn) navBtn.classList.add('active');
 
-        if (pageId === 'search') {
-          renderSearchResults(extraData ? extraData.filterTag : null);
+        if (pageId === 'home') {
+          currentHomePage = 1;
+          renderHomeList();
+        } else if (pageId === 'search') {
+          currentSearchPage = 1;
+          currentSearchFilterTag = extraData ? extraData.filterTag : null;
+          currentSearchKeyword = '';
+          renderSearchResults();
         }
       };
 
@@ -831,26 +890,21 @@
       function renderFormattedContent(text) {
         if (!text) return '';
 
-        // 1. ブロック要素の事前処理 (コードブロック & 折りたたみ)
         let processedText = text;
 
-        // ```コード``` の変換
         processedText = processedText.replace(/```([\s\S]*?)```/g, function(match, p1) {
           return `<pre class="wiki-code"><code>${escapeHtml(p1.trim())}</code></pre>`;
         });
 
-        // [title:題名]本文[end] の変換
         processedText = processedText.replace(/\[title:(.*?)\]([\s\S]*?)\[end\]/g, function(match, title, body) {
           return `<details class="wiki-details"><summary>${escapeHtml(title)}</summary><div class="wiki-details-body">${body}</div></details>`;
         });
 
-        // 2. 行単位の処理
         const lines = processedText.split('\n');
         let html = '';
         let inList = false;
 
         lines.forEach(line => {
-          // すでにHTMLブロック要素（preやdetails）として処理済みの行はそのまま出力
           if (line.startsWith('<pre class="wiki-code">') || line.startsWith('<details class="wiki-details">') || line.startsWith('</details>') || line.startsWith('<div class="wiki-details-body">')) {
             if (inList) { html += '</ul>'; inList = false; }
             html += line;
@@ -859,7 +913,6 @@
 
           const trimmed = line.trim();
 
-          // リスト構文 (- または * で始まる行)
           if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             if (!inList) {
               html += '<ul>';
@@ -873,38 +926,32 @@
             inList = false;
           }
 
-          // 空行の場合
           if (trimmed === '') {
             html += '<br>';
             return;
           }
 
-          // YouTube 埋め込み判定
           const ytMatch = trimmed.match(/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
           if (ytMatch) {
             html += `<iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe>`;
             return;
           }
 
-          // 画像URL判定 (.jpg, .png, .gif, .webp, .svg) 直貼り
           if (trimmed.match(/^https?:\/\/.*\.(jpeg|jpg|png|gif|webp|svg)(\?.*)?$/i)) {
             html += `<img src="${escapeHtml(trimmed)}" alt="画像" loading="lazy">`;
             return;
           }
 
-          // 動画URL判定 (.mp4, .webm, .ogg)
           if (trimmed.match(/^https?:\/\/.*\.(mp4|webm|ogg)(\?.*)?$/i)) {
             html += `<video controls src="${escapeHtml(trimmed)}"></video>`;
             return;
           }
 
-          // 音楽URL判定 (.mp3, .wav, .ogg, .m4a)
           if (trimmed.match(/^https?:\/\/.*\.(mp3|wav|ogg|m4a)(\?.*)?$/i)) {
             html += `<audio controls src="${escapeHtml(trimmed)}"></audio>`;
             return;
           }
 
-          // 通常テキスト行
           html += `<p>${inlineFormat(line)}</p>`;
         });
 
@@ -915,38 +962,25 @@
         return html;
       }
 
-      // インライン用マークダウン構文変換関数
       function inlineFormat(str) {
         if (!str) return '';
         let formatted = escapeHtml(str);
 
-        // [open:ボタン名|URL]
         formatted = formatted.replace(/\[open:(.*?)\|(.*?)\]/g, '<a href="$2" target="_blank" rel="noopener" class="wiki-btn">$1</a>');
-
-        // [img:画像URL]
         formatted = formatted.replace(/\[img:(.*?)\]/g, '<img src="$1" alt="画像" loading="lazy">');
-
-        // **太字**
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-        // *斜体*
         formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-        // ~~打ち消し~~
         formatted = formatted.replace(/~~(.*?)~~/g, '<del>$1</del>');
 
         return formatted;
       }
 
-      // 本文から最初の画像URL（直貼りまたは [img:URL] タグ）を1つ抽出する関数
       function getFirstImageUrl(text) {
         if (!text) return null;
 
-        // [img:URL] の判定
         const tagMatch = text.match(/\[img:(.*?)\]/);
         if (tagMatch) return tagMatch[1];
 
-        // 直貼りURLの判定
         const lines = text.split('\n');
         for (let line of lines) {
           const trimmed = line.trim();
@@ -957,7 +991,6 @@
         return null;
       }
 
-      // HTMLエスケープヘルパー
       function escapeHtml(str) {
         return str.replace(/&/g, '&amp;')
                   .replace(/</g, '&lt;')
@@ -977,18 +1010,45 @@
         console.error("データ取得エラー:", err);
       });
 
+      // ホーム画面のレンダリング (2件ずつ表示)
       function renderHomeList() {
         const container = document.getElementById('home-articles-list');
+        const paginationContainer = document.getElementById('home-pagination');
+
         if (allArticles.length === 0) {
           container.innerHTML = '<p style="color:var(--text-muted)">投稿されたページがまだありません。</p>';
+          paginationContainer.style.display = 'none';
           return;
         }
 
+        const totalPages = Math.ceil(allArticles.length / ITEMS_PER_PAGE);
+        if (currentHomePage > totalPages) currentHomePage = totalPages;
+        if (currentHomePage < 1) currentHomePage = 1;
+
+        const startIndex = (currentHomePage - 1) * ITEMS_PER_PAGE;
+        const pageArticles = allArticles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
         container.innerHTML = '';
-        allArticles.forEach(article => {
+        pageArticles.forEach(article => {
           container.appendChild(createArticleCard(article));
         });
+
+        // ページネーションUIの更新
+        if (allArticles.length > ITEMS_PER_PAGE) {
+          paginationContainer.style.display = 'flex';
+          document.getElementById('home-page-info').textContent = `${currentHomePage} / ${totalPages}`;
+          document.getElementById('home-prev-btn').disabled = currentHomePage === 1;
+          document.getElementById('home-next-btn').disabled = currentHomePage === totalPages;
+        } else {
+          paginationContainer.style.display = 'none';
+        }
       }
+
+      window.changeHomePage = function(delta) {
+        currentHomePage += delta;
+        renderHomeList();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
 
       function renderTagsList() {
         const tagsContainer = document.getElementById('tags-container');
@@ -1012,19 +1072,21 @@
         });
       }
 
-      function renderSearchResults(filterTag = null, keyword = '') {
+      // 検索・一覧画面のレンダリング (2件ずつ表示)
+      function renderSearchResults() {
         const container = document.getElementById('search-results-list');
         const title = document.getElementById('search-page-title');
+        const paginationContainer = document.getElementById('search-pagination');
         container.innerHTML = '';
 
         let results = allArticles;
 
-        if (filterTag) {
-          title.textContent = `カテゴリ: ${filterTag} の記事一覧`;
-          results = results.filter(a => a.tags && a.tags.includes(filterTag));
-        } else if (keyword) {
-          title.textContent = `"${keyword}" の検索結果`;
-          const kw = keyword.toLowerCase();
+        if (currentSearchFilterTag) {
+          title.textContent = `カテゴリ: ${currentSearchFilterTag} の記事一覧`;
+          results = results.filter(a => a.tags && a.tags.includes(currentSearchFilterTag));
+        } else if (currentSearchKeyword) {
+          title.textContent = `"${currentSearchKeyword}" の検索結果`;
+          const kw = currentSearchKeyword.toLowerCase();
           results = results.filter(a =>
             (a.title && a.title.toLowerCase().includes(kw)) ||
             (a.content && a.content.toLowerCase().includes(kw))
@@ -1035,18 +1097,44 @@
 
         if (results.length === 0) {
           container.innerHTML = '<p style="color:var(--text-muted)">該当するページが見つかりませんでした。</p>';
+          paginationContainer.style.display = 'none';
           return;
         }
 
-        results.forEach(article => {
+        const totalPages = Math.ceil(results.length / ITEMS_PER_PAGE);
+        if (currentSearchPage > totalPages) currentSearchPage = totalPages;
+        if (currentSearchPage < 1) currentSearchPage = 1;
+
+        const startIndex = (currentSearchPage - 1) * ITEMS_PER_PAGE;
+        const pageArticles = results.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+        pageArticles.forEach(article => {
           container.appendChild(createArticleCard(article));
         });
+
+        // ページネーションUIの更新
+        if (results.length > ITEMS_PER_PAGE) {
+          paginationContainer.style.display = 'flex';
+          document.getElementById('search-page-info').textContent = `${currentSearchPage} / ${totalPages}`;
+          document.getElementById('search-prev-btn').disabled = currentSearchPage === 1;
+          document.getElementById('search-next-btn').disabled = currentSearchPage === totalPages;
+        } else {
+          paginationContainer.style.display = 'none';
+        }
       }
+
+      window.changeSearchPage = function(delta) {
+        currentSearchPage += delta;
+        renderSearchResults();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
 
       document.getElementById('search-input').addEventListener('input', (e) => {
         const val = e.target.value.trim();
+        currentSearchKeyword = val;
+        currentSearchFilterTag = null;
+        currentSearchPage = 1;
         navigateTo('search');
-        renderSearchResults(null, val);
       });
 
       function createArticleCard(article) {
@@ -1055,14 +1143,12 @@
         div.style.marginBottom = '1.2rem';
 
         const tagsHtml = (article.tags || []).map(t => `<span class="green-tag">${t}</span>`).join(' ');
-        // プレビュー表示（特殊構文タグやURLを除去してテキストのみ抽出）
         const cleanSnippet = (article.content || '')
           .replace(/\[.*?\]/g, '')
           .replace(/(https?:\/\/[^\s]+)/g, '')
           .substring(0, 100);
         const dateStr = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleDateString('ja-JP') : '日付なし';
 
-        // 本文から画像URLを取得
         const imageUrl = getFirstImageUrl(article.content);
         const imageHtml = imageUrl ? `
           <div class="article-card-media">
@@ -1093,7 +1179,6 @@
         currentDetailId = id;
         document.getElementById('detail-title').textContent = article.title;
 
-        // 自動判定・変換されたリッチコンテンツを表示
         document.getElementById('detail-content').innerHTML = renderFormattedContent(article.content);
 
         const dateStr = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleString('ja-JP') : '日付不明';
@@ -1109,7 +1194,6 @@
         navigateTo('detail');
       }
 
-      // コメント取得
       function listenComments(articleId) {
         if (commentsUnsubscribe) commentsUnsubscribe();
 
@@ -1140,7 +1224,6 @@
         });
       }
 
-      // コメント投稿送信
       document.getElementById('comment-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentDetailId) return;
@@ -1162,7 +1245,6 @@
         }
       });
 
-      // 記事保存処理
       document.getElementById('create-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!isAdmin) {
@@ -1194,7 +1276,6 @@
         }
       });
 
-      // 記事削除
       document.getElementById('btn-delete').addEventListener('click', async () => {
         if (!isAdmin || !currentDetailId || !confirm('このページを削除してもよろしいですか？')) return;
         try {
