@@ -641,7 +641,7 @@
     import { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    const ADMIN_EMAIL = "mikancat09@gmail.com, tannokijiki4@gmail.com";
+    const ADMIN_EMAIL = ["mikancat09@gmail.com", "tannokijiki4@gmail.com", "kuwakuwa.53577.taki@gmail.com", "kuwakuwa53577@gmail.com"];
 
     const firebaseConfig = {
       apiKey: "AIzaSyAWJ8gxMBqlCH-HGccXb-PpwM7xWVghUNg",
@@ -694,7 +694,7 @@
 
     onAuthStateChanged(auth, user => {
       currentUser = user;
-      isAdmin = user && (user.email === ADMIN_EMAIL);
+      isAdmin = user && (ADMIN_EMAIL.includes(user.email));
 
       const userDisplay = document.getElementById('user-display');
       const navCreate = document.getElementById('nav-create');
