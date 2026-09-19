@@ -46,7 +46,6 @@
         padding: 2rem 1.5rem;
       }
 
-      /* レイアウト調整: 3カラム（左240px, 中央1fr, 右280px） */
       .app-layout {
         display: grid;
         grid-template-columns: 240px 1fr 280px;
@@ -55,7 +54,6 @@
         width: 100%;
       }
 
-      /* 左サイドバー: 上レイヤー ＆ スクロール固定設定 */
       .sidebar {
         display: flex;
         flex-direction: column;
@@ -135,12 +133,43 @@
         height: 18px;
       }
 
-      /* メインコンテンツ（中央レイヤー） */
+.counter-widget {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem; /* 内側の余白を少し小さく調整 */
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin-top: 1rem; /* margin-top: auto から固定余白へ変更してはみ出しを防止 */
+        width: 93%; /* サイドバー枠内に確実に収まるよう固定 */
+      }
+
+      .counter-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.78rem; /* 文字サイズを少しスリムに調整 */
+      }
+
+      .counter-label {
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        white-space: nowrap; /* テキストの途中で改行されないように指定 */
+      }
+
+      .counter-value {
+        font-weight: bold;
+        color: var(--accent-blue);
+        font-size: 0.85rem;
+      }
+
       .main-content {
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
-        min-width: 0; /* 折り返し崩れ防止 */
+        min-width: 0;
         position: relative;
         z-index: 1;
       }
@@ -157,7 +186,6 @@
         background-color: var(--card-hover);
       }
 
-      /* サムネイル画像の表示スタイル */
       .article-card-media {
         width: 100%;
         height: 200px;
@@ -211,7 +239,6 @@
         color: var(--text-muted);
       }
 
-      /* 記事詳細のメディアレンダリング用スタイル */
       .rendered-content {
         line-height: 1.8;
         font-size: 0.95rem;
@@ -251,7 +278,6 @@
         margin-bottom: 0.3rem;
       }
 
-      /* カスタムマークダウン要素用のスタイル */
       .wiki-btn {
         display: inline-block;
         padding: 0.5rem 1rem;
@@ -299,7 +325,6 @@
         color: #e6e6e6;
       }
 
-      /* ページネーションスタイル */
       .pagination {
         display: flex;
         justify-content: center;
@@ -333,7 +358,6 @@
         color: var(--text-muted);
       }
 
-      /* コメント表示 */
       .comments-section {
         margin-top: 2rem;
         border-top: 1px solid var(--box-inner-bg);
@@ -365,7 +389,6 @@
         white-space: pre-wrap;
       }
 
-      /* 右サイドバー: 上レイヤー ＆ スクロール固定設定 */
       .right-widgets {
         display: flex;
         flex-direction: column;
@@ -556,6 +579,30 @@
         color: var(--text-muted);
       }
 
+      ::-webkit-scrollbar {
+        width: 3px;
+        height: 3px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #0f0f10;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #333336;
+        border-radius: 4px;
+        transition: background 0.2s ease, width 0.2s ease;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #55555e;
+      }
+
+      *:hover::-webkit-scrollbar {
+        width: 5px;
+      }
+
       @media (max-width: 960px) {
         .app-layout {
           grid-template-columns: 1fr;
@@ -637,6 +684,17 @@
               ページ投稿 (管理者)
             </button>
           </nav>
+
+          <div class="counter-widget">
+            <div class="counter-item">
+              <span class="counter-label">🌐 総アクセス数</span>
+              <span class="counter-value" id="total-views">---</span>
+            </div>
+            <div class="counter-item">
+              <span class="counter-label">📅 今日のアクセス</span>
+              <span class="counter-value" id="today-views">---</span>
+            </div>
+          </div>
         </aside>
         <main class="main-content">
           <div id="page-home" class="view-page active">
@@ -667,7 +725,10 @@
               <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;" id="detail-meta"></div>
               <div id="detail-tags" class="article-tags" style="margin-bottom: 1.5rem;"></div>
               <div id="detail-content" class="rendered-content"></div>
-              <div style="margin-top: 1.5rem;" id="detail-actions">
+              <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem;" id="detail-actions">
+                <button id="btn-edit" class="btn" style="background-color: var(--accent-blue); display: none;">
+                  この記事を編集 (管理者限定)
+                </button>
                 <button id="btn-delete" class="btn" style="background-color: #e53e3e; display: none;">
                   この記事を削除 (管理者限定)
                 </button>
@@ -708,7 +769,7 @@
           </div>
           <div id="page-create" class="view-page">
             <div style="background-color:var(--card-bg); padding:1.5rem; border-radius:12px;">
-              <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">新規Wikiページの投稿</h2>
+              <h2 style="margin-bottom: 1rem; font-size: 1.2rem;" id="create-page-heading">新規Wikiページの投稿</h2>
               <form id="create-form">
                 <div class="form-group">
                   <label>タイトル</label>
@@ -741,7 +802,10 @@
                     required
                   ></textarea>
                 </div>
-                <button type="submit" class="btn">投稿を保存</button>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button type="submit" class="btn" id="submit-btn">投稿を保存</button>
+                  <button type="button" class="btn" id="cancel-edit-btn" style="display: none; background-color: #555;" onclick="cancelEditing()">キャンセル</button>
+                </div>
               </form>
             </div>
           </div>
@@ -781,7 +845,7 @@
     </div>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+      import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
       import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
       const ADMIN_EMAIL = ["mikancat09@gmail.com", "tannokijiki4@gmail.com", "kuwakuwa.53577.taki@gmail.com", "kuwakuwa53577@gmail.com"];
@@ -804,16 +868,68 @@
       let isAdmin = false;
       let allArticles = [];
       let currentDetailId = null;
+      let editingArticleId = null; // 編集中の記事IDを保持
       let commentsUnsubscribe = null;
 
-      // ページネーション用状態管理
-      const ITEMS_PER_PAGE = 2; // 1ページあたり2つのメッセージ/記事を表示
+      const ITEMS_PER_PAGE = 2;
       let currentHomePage = 1;
       let currentSearchPage = 1;
       let currentSearchFilterTag = null;
       let currentSearchKeyword = '';
 
-      // 画面切り替え
+      // アクセスカウンター機能（sessionStorageによる重複カウント防止付き）
+      async function updateAndRenderViews() {
+        const statsDocRef = doc(db, "site_stats", "counters");
+        const todayStr = new Date().toISOString().split('T')[0];
+        const sessionKey = `visited_${todayStr}`;
+
+        // 同一セッション内でカウント未加算の場合のみ処理を実行
+        if (!sessionStorage.getItem(sessionKey)) {
+          try {
+            await runTransaction(db, async (transaction) => {
+              const statsDoc = await transaction.get(statsDocRef);
+
+              if (!statsDoc.exists()) {
+                transaction.set(statsDocRef, {
+                  totalViews: 1,
+                  todayViews: 1,
+                  lastDate: todayStr
+                });
+              } else {
+                const data = statsDoc.data();
+                const isToday = data.lastDate === todayStr;
+                
+                transaction.update(statsDocRef, {
+                  totalViews: increment(1),
+                  todayViews: isToday ? increment(1) : 1,
+                  lastDate: todayStr
+                });
+              }
+            });
+            // 重複加算防止のフラグを保存
+            sessionStorage.setItem(sessionKey, "true");
+          } catch (err) {
+            console.error("カウント更新エラー:", err);
+          }
+        }
+
+        onSnapshot(statsDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const totalEl = document.getElementById('total-views');
+            const todayEl = document.getElementById('today-views');
+            
+            if (totalEl) totalEl.textContent = (data.totalViews || 0).toLocaleString();
+            if (todayEl) {
+              const isToday = data.lastDate === todayStr;
+              todayEl.textContent = (isToday ? (data.todayViews || 0) : 0).toLocaleString();
+            }
+          }
+        });
+      }
+
+      updateAndRenderViews();
+
       window.navigateTo = function(pageId, extraData = null) {
         if (pageId === 'create' && !isAdmin) {
           alert('記事投稿権限がありません (管理者専用)');
@@ -842,7 +958,6 @@
 
       document.getElementById('logo-home').addEventListener('click', () => navigateTo('home'));
 
-      // 認証処理
       document.getElementById('btn-login').addEventListener('click', () => {
         signInWithPopup(auth, provider).catch(err => alert("ログインエラー: " + err.message));
       });
@@ -854,6 +969,7 @@
 
         const userDisplay = document.getElementById('user-display');
         const navCreate = document.getElementById('nav-create');
+        const btnEdit = document.getElementById('btn-edit');
         const btnDelete = document.getElementById('btn-delete');
 
         if (user) {
@@ -867,6 +983,7 @@
         }
 
         navCreate.style.display = isAdmin ? 'flex' : 'none';
+        if (btnEdit) btnEdit.style.display = isAdmin ? 'inline-block' : 'none';
         if (btnDelete) btnDelete.style.display = isAdmin ? 'inline-block' : 'none';
 
         if (currentUser && currentUser.displayName && document.getElementById('comment-name')) {
@@ -874,7 +991,6 @@
         }
       });
 
-      // ツールバーボタンで定型入力プレースホルダーを差し込む
       window.insertSnippet = function(type) {
         const textarea = document.getElementById('input-content');
         let snippet = "";
@@ -900,7 +1016,6 @@
         textarea.focus();
       };
 
-      // メディアやリスト・独自マークダウン記法を拡張判定してリッチHTML表示に変換するパーサー関数
       function renderFormattedContent(text) {
         if (!text) return '';
 
@@ -980,7 +1095,7 @@
         if (!str) return '';
         let formatted = escapeHtml(str);
 
-        formatted = formatted.replace(/\[open:(.*?)\|(.*?)\]/g, '<a href="$2" target="_blank" rel="noopener" class="wiki-btn">$1</a>');
+        formatted = formatted.replace(/\[open:(.*?)\Vert{}(.*?)\]/g, '<a href="$2" target="_blank" rel="noopener" class="wiki-btn">$1</a>');
         formatted = formatted.replace(/\[img:(.*?)\]/g, '<img src="$1" alt="画像" loading="lazy">');
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
@@ -1013,7 +1128,6 @@
                   .replace(/'/g, '&#039;');
       }
 
-      // Firestore 記事取得
       const q = query(collection(db, "articles"), orderBy("createdAt", "desc"));
       onSnapshot(q, snapshot => {
         allArticles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1024,7 +1138,6 @@
         console.error("データ取得エラー:", err);
       });
 
-      // ホーム画面のレンダリング (2件ずつ表示)
       function renderHomeList() {
         const container = document.getElementById('home-articles-list');
         const paginationContainer = document.getElementById('home-pagination');
@@ -1047,7 +1160,6 @@
           container.appendChild(createArticleCard(article));
         });
 
-        // ページネーションUIの更新
         if (allArticles.length > ITEMS_PER_PAGE) {
           paginationContainer.style.display = 'flex';
           document.getElementById('home-page-info').textContent = `${currentHomePage} / ${totalPages}`;
@@ -1086,7 +1198,6 @@
         });
       }
 
-      // 検索・一覧画面のレンダリング (2件ずつ表示)
       function renderSearchResults() {
         const container = document.getElementById('search-results-list');
         const title = document.getElementById('search-page-title');
@@ -1126,7 +1237,6 @@
           container.appendChild(createArticleCard(article));
         });
 
-        // ページネーションUIの更新
         if (results.length > ITEMS_PER_PAGE) {
           paginationContainer.style.display = 'flex';
           document.getElementById('search-page-info').textContent = `${currentSearchPage} / ${totalPages}`;
@@ -1201,8 +1311,10 @@
         const tagsContainer = document.getElementById('detail-tags');
         tagsContainer.innerHTML = (article.tags || []).map(t => `<span class="green-tag">${t}</span>`).join(' ');
 
+        const btnEdit = document.getElementById('btn-edit');
         const btnDelete = document.getElementById('btn-delete');
-        btnDelete.style.display = isAdmin ? 'inline-block' : 'none';
+        if (btnEdit) btnEdit.style.display = isAdmin ? 'inline-block' : 'none';
+        if (btnDelete) btnDelete.style.display = isAdmin ? 'inline-block' : 'none';
 
         listenComments(id);
         navigateTo('detail');
@@ -1217,7 +1329,7 @@
           commentsList.innerHTML = '';
 
           if (snapshot.empty) {
-            commentsList.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">コメントはまだありません。</p>';
+            commentsList.innerHTML = '<p style="color:var(--text-muted); font-size:0.8rem;">コメントはまだありません。</p>';
             return;
           }
 
@@ -1259,6 +1371,34 @@
         }
       });
 
+      // 編集開始ロジック
+      document.getElementById('btn-edit').addEventListener('click', () => {
+        if (!isAdmin || !currentDetailId) return;
+        const article = allArticles.find(a => a.id === currentDetailId);
+        if (!article) return;
+
+        editingArticleId = article.id;
+        document.getElementById('create-page-heading').textContent = '記事の編集';
+        document.getElementById('input-title').value = article.title || '';
+        document.getElementById('input-tags').value = (article.tags || []).join(', ');
+        document.getElementById('input-content').value = article.content || '';
+        document.getElementById('submit-btn').textContent = '変更を更新';
+        document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+
+        navigateTo('create');
+      });
+
+      // 編集キャンセル機能
+      window.cancelEditing = function() {
+        editingArticleId = null;
+        document.getElementById('create-page-heading').textContent = '新規Wikiページの投稿';
+        document.getElementById('create-form').reset();
+        document.getElementById('submit-btn').textContent = '投稿を保存';
+        document.getElementById('cancel-edit-btn').style.display = 'none';
+        navigateTo('home');
+      };
+
+      // 投稿・更新の送信ロジック
       document.getElementById('create-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!isAdmin) {
@@ -1272,18 +1412,31 @@
         const tags = tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
         try {
-          const newRef = doc(collection(db, "articles"));
-          await setDoc(newRef, {
-            title,
-            content,
-            tags,
-            authorId: currentUser.uid,
-            authorName: currentUser.displayName || currentUser.email,
-            createdAt: serverTimestamp()
-          });
-
-          document.getElementById('create-form').reset();
-          openDetail(newRef.id);
+          if (editingArticleId) {
+            // 既存記事の更新
+            await updateDoc(doc(db, "articles", editingArticleId), {
+              title,
+              content,
+              tags,
+              updatedAt: serverTimestamp()
+            });
+            const targetId = editingArticleId;
+            cancelEditing();
+            openDetail(targetId);
+          } else {
+            // 新規記事の追加
+            const newRef = doc(collection(db, "articles"));
+            await setDoc(newRef, {
+              title,
+              content,
+              tags,
+              authorId: currentUser.uid,
+              authorName: currentUser.displayName || currentUser.email,
+              createdAt: serverTimestamp()
+            });
+            document.getElementById('create-form').reset();
+            openDetail(newRef.id);
+          }
         } catch (err) {
           console.error(err);
           alert('保存に失敗しました: ' + err.message);
